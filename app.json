@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "Tayylo",
+    "slug": "tayylo",
+    "scheme": "tayylo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/app-icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F4F2EC",
+    "ios": {
+      "bundleIdentifier": "com.tayylo.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.tayylo.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#30371F",
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "monochromeImage": "./assets/adaptive-monochrome.png"
+      },
+      "softwareKeyboardLayoutMode": "resize",
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-image",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#2E3420",
+          "image": "./assets/splash-symbol.png",
+          "imageWidth": 120
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Tayylo uses your photos so you can add client, fabric and style pictures.",
+          "cameraPermission": "Tayylo uses the camera so you can photograph clients, fabrics and styles."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Tayylo uses your photos so you can add client, fabric and style pictures.",
+          "savePhotosPermission": "Tayylo saves measurement cards, invoices and receipts to your photos.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
