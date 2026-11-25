@@ -56,6 +56,20 @@ export const customerRepo = {
         `customer:${customerId}`
       )
     )?.ok ?? false,
+  /**
+   * Deletes the client with their measurements, orders and photos. The server
+   * refuses (409, with the reason) while they have orders in progress or a balance owed.
+   */
+  delete: async (id: string) =>
+    (
+      await mutating(
+        api<{ ok: boolean } | null>(`/api/customers/${id}`, { method: "DELETE" }),
+        "customers",
+        "orders",
+        `customer:${id}`,
+        `measurements:${id}`
+      )
+    )?.ok ?? false,
   importCustomers: async (items: Array<{ fullName: string; phone?: string; email?: string; notes?: string }>) =>
     (await mutating(api<{ count: number }>("/api/customers/import", { method: "POST", body: JSON.stringify(items) }), "customers"))
       ?.count ?? 0,

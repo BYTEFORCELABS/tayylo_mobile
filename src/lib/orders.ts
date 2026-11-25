@@ -93,3 +93,24 @@ export function collectedInMonth(orders: Order[], ref = new Date()) {
     0
   );
 }
+
+/** The parts of an order that decide whether its client can be deleted. */
+interface DeletableOrderShape {
+  statusName: string;
+  priceMinor: number;
+  payments: { amountMinor: number }[];
+}
+
+/**
+ * Why a client can't be deleted yet — same rule as the web and the API:
+ * a client stays while they still have work in production or money owed.
+ */
+export function clientDeletionBlockers(orders: DeletableOrderShape[]) {
+  const live = orders.filter(o => normalizeStatus(o.statusName) !== "cancelled");
+  const activeOrders = live.filter(o => normalizeStatus(o.statusName) !== "delivered").length;
+  const outstandingMinor = live.reduce(
+    (sum, o) => sum + Math.max(0, o.priceMinor - o.payments.reduce((s, p) => s + p.amountMinor, 0)),
+    0
+  );
+  return { activeOrders, outstandingMinor, canDelete: activeOrders === 0 && outstandingMinor === 0 };
+}
