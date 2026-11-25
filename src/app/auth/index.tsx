@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import { router, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from "expo-apple-authentication";
 import { AlertCircle, Eye, EyeOff, Lock, Mail, MailCheck } from "lucide-react-native";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { StitchLoader } from "@/components/brand/stitch-loader";
@@ -14,7 +15,15 @@ import { SegmentedControl } from "@/components/ui/choice";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { ApiRequestError, NetworkError } from "@/lib/api/http";
-import { register, requestPasswordReset, signIn, SignInError } from "@/lib/auth/session";
+import {
+  AppleSignInCancelled,
+  isAppleSignInAvailable,
+  register,
+  requestPasswordReset,
+  signIn,
+  signInWithApple,
+  SignInError,
+} from "@/lib/auth/session";
 import { colors, radii } from "@/theme/tokens";
 
 type Mode = "signin" | "signup" | "reset";
@@ -39,17 +48,6 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <Svg width={16} height={18} viewBox="0 0 384 512">
-      <Path
-        fill={colors.ink}
-        d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5c0 26.2 4.8 53.3 14.4 81.2 12.8 37 59 127.6 107.2 126.1 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-83.5 102.6-120.6-65.2-30.7-61.7-90-61.7-91.4zM255.3 100.6c26.7-31.8 24.3-60.8 23.5-71.2-23.6 1.4-51 16.5-66.5 35-17.1 19.8-27.3 44.4-25.1 70.5 24.1 1.9 46-11.2 68.1-34.3z"
-      />
-    </Svg>
-  );
-}
-
 export default function AuthScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = React.useState<Mode>(params.mode === "signup" ? "signup" : "signin");
@@ -61,6 +59,16 @@ export default function AuthScreen() {
   const [error, setError] = React.useState<string | null>(null);
   const [touched, setTouched] = React.useState({ email: false, password: false });
   const [resetSent, setResetSent] = React.useState(false);
+  const [appleAvailable, setAppleAvailable] = React.useState(false);
+  const [appleLoading, setAppleLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let alive = true;
+    isAppleSignInAvailable().then(ok => alive && setAppleAvailable(ok));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const emailValid = EMAIL_RE.test(email.trim());
   const passwordValid = password.length >= 6;
@@ -76,7 +84,7 @@ export default function AuthScreen() {
 
   const handleSubmit = async () => {
     setTouched({ email: true, password: true });
-    if (!emailValid || !passwordValid || loading) return;
+    if (!emailValid || !passwordValid || loading || appleLoading) return;
     setError(null);
     setLoading(true);
     try {
@@ -113,10 +121,24 @@ export default function AuthScreen() {
     }
   };
 
-  // The backend's Google / Apple providers have no credentials configured yet
-  // (the web shows Auth.js's "Configuration" error page for the same reason).
-  const handleOAuth = (provider: "Google" | "Apple") => {
-    setError(`${provider} sign-in isn't available yet. Use your email and password for now.`);
+  // Native Sign in with Apple. One request at a time; the same button signs
+  // in or creates the account (with the role picked on "Create account").
+  const handleApple = async () => {
+    if (appleLoading || loading) return;
+    setError(null);
+    setAppleLoading(true);
+    try {
+      await signInWithApple(role);
+      router.replace("/");
+    } catch (e) {
+      if (!(e instanceof AppleSignInCancelled)) setError(e instanceof SignInError ? e.message : OFFLINE);
+      setAppleLoading(false);
+    }
+  };
+
+  // Google on mobile still needs a native Google client (not configured yet).
+  const handleGoogle = () => {
+    setError("Google sign-in isn't available in the app yet. Use your email and password for now.");
   };
 
   return (
@@ -283,12 +305,25 @@ export default function AuthScreen() {
                   </Text>
                   <View style={styles.rule} />
                 </View>
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <Button variant="secondary" size="lg" leading={<GoogleIcon />} style={{ flex: 1 }} onPress={() => handleOAuth("Google")}>
-                    Google
-                  </Button>
-                  <Button variant="secondary" size="lg" leading={<AppleIcon />} style={{ flex: 1 }} onPress={() => handleOAuth("Apple")}>
-                    Apple
+                <View style={{ gap: 12 }}>
+                  {appleAvailable &&
+                    (appleLoading ? (
+                      // Apple's native button can't show progress — same size and colour, with our loader.
+                      <View style={styles.appleBusy} accessibilityRole="progressbar" accessibilityLabel="Signing in with Apple">
+                        <StitchLoader label="Stitching you in" color="#FFFFFF" />
+                      </View>
+                    ) : (
+                      <AppleAuthenticationButton
+                        buttonType={mode === "signup" ? AppleAuthenticationButtonType.SIGN_UP : AppleAuthenticationButtonType.CONTINUE}
+                        buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+                        cornerRadius={26}
+                        style={[styles.appleButton, loading && { opacity: 0.45 }]}
+                        pointerEvents={loading ? "none" : "auto"}
+                        onPress={handleApple}
+                      />
+                    ))}
+                  <Button variant="secondary" size="lg" block leading={<GoogleIcon />} disabled={appleLoading} onPress={handleGoogle}>
+                    Continue with Google
                   </Button>
                 </View>
               </>
@@ -307,4 +342,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
   divider: { marginVertical: 24, flexDirection: "row", alignItems: "center", gap: 12 },
   rule: { flex: 1, height: 1, backgroundColor: colors.border },
+  // Same height as the lg buttons around it.
+  appleButton: { width: "100%", height: 52 },
+  appleBusy: { height: 52, borderRadius: 26, backgroundColor: "#000000", alignItems: "center", justifyContent: "center", overflow: "hidden" },
 });

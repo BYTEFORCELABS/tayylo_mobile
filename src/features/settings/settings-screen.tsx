@@ -26,6 +26,7 @@ import { TemplatesDialog } from "./templates-dialog";
 import { ImportDialog } from "./import-dialog";
 import { ExportDialog } from "./export-dialog";
 import { BankAccountsDialog, BrandMark, LogoPicker, bankAccountsOf } from "./branding";
+import { SignInMethodsSection } from "./sign-in-methods";
 
 const MONO = Platform.select({ ios: "Menlo", default: "monospace" });
 
@@ -199,6 +200,9 @@ export function SettingsScreen() {
           <SectionLabel>Account</SectionLabel>
           <List style={styles.flatList}>
             {email ? <ListItem leading={<IconTile icon={Mail} />} title="Signed in as" subtitle={email} /> : null}
+          </List>
+          <SignInMethodsSection style={styles.flatList} />
+          <List style={styles.flatList}>
             <ListItem onPress={handleSignOut} leading={<IconTile icon={LogOut} />} title="Sign out" />
           </List>
         </View>

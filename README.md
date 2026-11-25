@@ -35,6 +35,15 @@ simulator, emulator or a phone on the same Wi-Fi reaches the web app's
 `npm run dev` server without extra setup. Set it to your deployed web app's
 origin for release builds.
 
+### Sign in with Apple
+
+iOS only, using the native sheet (`expo-apple-authentication`). `app.json`
+enables the entitlement (`ios.usesAppleSignIn`), so after pulling run
+`npx expo prebuild --clean --platform ios` before `npx expo run:ios`. The
+backend must have the `APPLE_*` server variables set. Setup, Apple portal
+steps and the test checklist are in the web repo:
+`docs/SIGN_IN_WITH_APPLE.md`.
+
 ### Password-reset links
 
 Reset emails link to the web's `/auth/reset?token=…`. The app also handles

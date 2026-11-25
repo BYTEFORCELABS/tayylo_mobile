@@ -56,6 +56,20 @@ export const customerRepo = {
         `customer:${customerId}`
       )
     )?.ok ?? false,
+  /**
+   * Deletes the client with their measurements, orders and photos. The server
+   * refuses (409, with the reason) while they have orders in progress or a balance owed.
+   */
+  delete: async (id: string) =>
+    (
+      await mutating(
+        api<{ ok: boolean } | null>(`/api/customers/${id}`, { method: "DELETE" }),
+        "customers",
+        "orders",
+        `customer:${id}`,
+        `measurements:${id}`
+      )
+    )?.ok ?? false,
   importCustomers: async (items: Array<{ fullName: string; phone?: string; email?: string; notes?: string }>) =>
     (await mutating(api<{ count: number }>("/api/customers/import", { method: "POST", body: JSON.stringify(items) }), "customers"))
       ?.count ?? 0,
@@ -191,12 +205,27 @@ export const accountRepo = {
   },
 };
 
+// ---- sign-in methods ----
+
+export interface SignInMethods {
+  hasPassword: boolean;
+  identities: { provider: "apple" | "google"; email: string | null; isPrivateEmail: boolean; linkedAt: string }[];
+  available: { appleWeb: boolean; appleNative: boolean; google: boolean };
+}
+
+export const signInMethodsRepo = {
+  get: () => api<SignInMethods | null>("/api/me/identities"),
+  disconnect: (provider: "apple" | "google") => api(`/api/me/identities/${provider}`, { method: "DELETE" }),
+};
+
 // ---- me / explore ----
 
 export interface Me {
   id: string;
   email: string;
   role: "tailor" | "customer";
+  /** Display name — e.g. from Sign in with Apple's first authorization. */
+  name?: string | null;
 }
 
 export const meRepo = {

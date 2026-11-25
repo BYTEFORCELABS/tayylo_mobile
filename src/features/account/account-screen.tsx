@@ -9,6 +9,7 @@ import { Screen } from "@/components/ui/page";
 import { Text } from "@/components/ui/text";
 import { signOut } from "@/lib/auth/session";
 import { useMe } from "@/lib/use-business";
+import { SignInMethodsSection } from "@/features/settings/sign-in-methods";
 import { colors, radii } from "@/theme/tokens";
 
 export function AccountScreen() {
@@ -28,6 +29,7 @@ export function AccountScreen() {
           {me?.role} account
         </Text>
       </View>
+      <SignInMethodsSection style={{ marginTop: 16 }} />
       <Button
         variant="secondary"
         block

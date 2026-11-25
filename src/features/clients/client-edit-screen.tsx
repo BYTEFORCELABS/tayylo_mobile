@@ -4,16 +4,18 @@
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { UserX } from "lucide-react-native";
+import { Trash2, UserX } from "lucide-react-native";
 import type { Customer } from "@/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { IconTile, List, ListItem } from "@/components/ui/list";
 import { Overline, Screen, useBack } from "@/components/ui/page";
 import { EmptyState, ErrorState, LoadingRegion, Skeleton } from "@/components/ui/states";
 import { Tag } from "@/components/ui/tag";
 import { toast } from "@/components/ui/toast";
 import { customerRepo } from "@/lib/api/repos";
+import { DeleteClientDialog } from "./delete-client-dialog";
 import { radii } from "@/theme/tokens";
 
 export function ClientEditScreen() {
@@ -31,6 +33,7 @@ export function ClientEditScreen() {
   const [tagDraft, setTagDraft] = React.useState("");
   const [nameError, setNameError] = React.useState<string>();
   const [saving, setSaving] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
 
   const load = React.useCallback(() => {
     customerRepo
@@ -213,6 +216,19 @@ export function ClientEditScreen() {
           Cancel
         </Button>
       </View>
+
+      <Overline style={{ marginBottom: 12, marginTop: 48 }}>Manage</Overline>
+      <List>
+        <ListItem
+          onPress={() => setDeleteOpen(true)}
+          leading={<IconTile tone="danger" icon={Trash2} />}
+          title="Delete client"
+          subtitle="Removes their profile, measurements, past orders and photos"
+          tone="danger"
+        />
+      </List>
+
+      <DeleteClientDialog clientId={clientId} clientName={client.fullName} open={deleteOpen} onOpenChange={setDeleteOpen} />
     </Screen>
   );
 }
