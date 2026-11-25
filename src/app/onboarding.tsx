@@ -15,7 +15,7 @@ import { Text } from "@/components/ui/text";
 import { toast } from "@/components/ui/toast";
 import { businessRepo } from "@/lib/api/repos";
 import { CURRENCIES, currencySymbol, formatMoney } from "@/lib/format";
-import { setCachedBusiness } from "@/lib/use-business";
+import { setCachedBusiness, useMe } from "@/lib/use-business";
 import { colors, radii, shadows } from "@/theme/tokens";
 import { measurementValue } from "@/theme/typography";
 
@@ -31,12 +31,16 @@ export default function OnboardingScreen() {
   const [step, setStep] = React.useState(0);
   const [dir, setDir] = React.useState(1);
   const [businessName, setBusinessName] = React.useState("");
-  const [ownerName, setOwnerName] = React.useState("");
+  // null until edited: falls back to the account name (Sign in with Apple
+  // shares it only once).
+  const [ownerNameInput, setOwnerName] = React.useState<string | null>(null);
   const [currency, setCurrency] = React.useState("NGN");
   const [unit, setUnit] = React.useState<"imperial" | "metric">("imperial");
   const [garments, setGarments] = React.useState<string[]>(["Suits", "Shirts", "Agbada", "Senator"]);
   const [nameError, setNameError] = React.useState<string>();
   const [saving, setSaving] = React.useState(false);
+  const { me } = useMe();
+  const ownerName = ownerNameInput ?? me?.name ?? "";
 
   const finish = async (skip = false) => {
     setSaving(true);
